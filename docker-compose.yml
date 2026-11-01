@@ -1,0 +1,45 @@
+# Docker Compose for AI Agent Evaluation Platform
+
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./data:/app/data
+      - ./backend:/app
+    environment:
+      - DATABASE_URL=sqlite:///./data/platform.db
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - VECTOR_STORE_PATH=./data/vector_stores
+      - UPLOAD_DIR=./data/uploads
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "5173:5173"
+    depends_on:
+      - backend
+    environment:
+      - VITE_API_URL=http://localhost:8000/api
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    profiles:
+      - with-ollama
+    restart: unless-stopped
+
+volumes:
+  ollama_data:
